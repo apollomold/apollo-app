@@ -36,6 +36,9 @@
   var frame=$('app'), bell=$('bell'), TOKEN='', REG=null;
   var BASE='https://script.google.com/macros/s/AKfycbxiXPoC7DfW6S-C54yeHuJS-6HUKOa6Vk0UHZc-YskSjvShdPv43ksYpuJByy4BfmK1GQ/exec';
   var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent), USED='';
+  /* PC에서는 '알림 켜기' 버튼을 보여주지 않는다 (폰·태블릿에서만 표시) */
+  var isMobile=/iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent)||(/Mac/i.test(navigator.platform||'')&&navigator.maxTouchPoints>1);
+  function showBell(){ bell.style.display=isMobile?'block':'none'; }
   /* 알림 주소(토큰)를 앱 주소 뒤에 붙여 앱에 전달한다 (앱은 로그인한 계정과 연결해 서버에 등록) */
   function loadApp(tok){ USED=tok||''; frame.src=BASE+(tok?('?fcm='+encodeURIComponent(tok)+'&plat='+(isIOS?'ios':'android')):''); }
   var saved=''; try{ saved=localStorage.getItem('apFcm')||''; }catch(e){}
@@ -58,10 +61,10 @@
     navigator.serviceWorker.register('sw.js').then(function(r){ return navigator.serviceWorker.ready; }).then(function(r){
       REG=r;
       if(Notification.permission==='granted'){ getToken().catch(function(){}); }
-      else if(Notification.permission==='default'){ bell.style.display='block'; }
+      else if(Notification.permission==='default'){ showBell(); }
     }).catch(function(){});
   } else if(isIOS&&!standalone){
-    bell.textContent='🔔 알림: 홈 화면에 추가한 앱에서 켤 수 있어요'; bell.style.display='block'; bell.onclick=function(){ alert('사파리 공유 버튼 → 홈 화면에 추가 후, 홈 화면 아이콘으로 열어 주세요.'); };
+    bell.textContent='🔔 알림: 홈 화면에 추가한 앱에서 켤 수 있어요'; showBell(); bell.onclick=function(){ alert('사파리 공유 버튼 → 홈 화면에 추가 후, 홈 화면 아이콘으로 열어 주세요.'); };
   }
 
   bell.addEventListener('click',function(){
@@ -69,7 +72,10 @@
     Notification.requestPermission().then(function(p){
       if(p!=='granted'){ alert('알림이 허용되지 않았습니다. 폰 설정에서 APOLLO+ 알림을 허용해 주세요.'); return; }
       bell.style.display='none';
-      return getToken().then(function(t){ $('tkv').value=t; $('tk').style.display='flex'; });
+      return getToken().then(function(t){
+        if(/[?&]debug/.test(location.search)){ $('tkv').value=t; $('tk').style.display='flex'; }
+        else { bell.textContent='✅ 알림이 켜졌습니다'; showBell(); bell.onclick=null; setTimeout(function(){ bell.style.display='none'; },3000); }
+      });
     }).catch(function(e){ alert('알림 설정 오류: '+(e&&e.message?e.message:e)); });
   });
   $('tkc').onclick=function(){ var t=$('tkv'); t.select(); try{ navigator.clipboard.writeText(t.value); }catch(e){ document.execCommand('copy'); } this.textContent='복사됨'; };
