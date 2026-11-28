@@ -43,6 +43,8 @@
   function loadApp(tok){ USED=tok||''; frame.src=BASE+(tok?('?fcm='+encodeURIComponent(tok)+'&plat='+(isIOS?'ios':'android')):''); }
   var saved=''; try{ saved=localStorage.getItem('apFcm')||''; }catch(e){}
   loadApp(saved);
+  /* 앱 안의 '새 버전 안내'에서 업데이트를 누르면 앱 화면(iframe)만 새로 불러온다 */
+  window.addEventListener('message',function(e){ if(e&&e.data&&e.data.apollo==='reload'){ var u=frame.src||BASE; frame.src=u.replace(/([?&])r=\d+&?/,'$1').replace(/[?&]$/,'')+(u.indexOf('?')>-1?'&':'?')+'r='+Date.now(); } });
   frame.addEventListener('load',function(){ var m=$('msg'); if(m) m.remove(); });
 
   var supported=('serviceWorker' in navigator)&&('Notification' in window)&&('PushManager' in window);
